@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aether Ascendant</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <canvas id="gameCanvas"></canvas>
+
+  <div id="hud" class="hidden">
+    <div id="topLeft">
+      <div class="bar hp"><div id="hpFill" class="fill"></div><span id="hpText"></span></div>
+      <div class="bar dodge"><div id="dodgeFill" class="fill"></div><span>Esquive</span></div>
+    </div>
+
+    <div id="topCenter">
+      <div id="levelText"></div>
+      <div id="enemiesText"></div>
+    </div>
+
+    <div id="topRight">
+      <div id="timeText"></div>
+      <div id="scoreText"></div>
+      <div id="fpsText" class="hidden"></div>
+    </div>
+
+    <div id="bossBar" class="hidden">
+      <div id="bossName">Boss</div>
+      <div class="bar boss"><div id="bossFill" class="fill"></div></div>
+    </div>
+
+    <div id="crosshair"></div>
+    <div id="prompt" class="hidden"></div>
+
+    <div id="banner">
+      <div id="bannerTitle"></div>
+      <div id="bannerSub"></div>
+    </div>
+    <div id="toast"></div>
+    <div id="flash"></div>
+  </div>
+
+  <div id="touchControls" class="hidden">
+    <div id="joystickZone">
+      <div id="joystickBase"><div id="joystickStick"></div></div>
+    </div>
+    <div id="touchButtons">
+      <button class="tbtn" id="tJump">Saut</button>
+      <button class="tbtn" id="tDodge">Roulade</button>
+      <button class="tbtn" id="tShoot">Tir</button>
+      <button class="tbtn" id="tInteract">Action</button>
+    </div>
+  </div>
+
+  <div id="mainMenu" class="screen">
+    <div class="panel">
+      <h1>Aether Ascendant</h1>
+      <p class="subtitle">10 plateformes d'ascension.<br>Survis aux vagues, affronte le mini-boss et le boss final.</p>
+      
+      <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+        <input type="text" id="lobbyCodeInput" placeholder="Code de salle (ex: salon123)" style="flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #3a4454; background: #161b26; color: #fff; font-size: 14px;">
+        <button id="btnCreateLobby" style="padding: 10px 14px; background: #00bcd4; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Créer</button>
+        <button id="btnJoinLobby" style="padding: 10px 14px; background: #4caf50; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Rejoindre</button>
+      </div>
+
+      <button id="btnPlay" class="btn primary">Jouer en Solo</button>
+      <button id="btnDifficulty" class="btn">Difficulté : Normale</button>
+      <button id="btnScores" class="btn">Meilleurs scores</button>
+      <button id="btnSettings" class="btn">Paramètres</button>
+      <div id="controlsHelp" class="help"></div>
+    </div>
+  </div>
+
+  <!-- Modale du salon multijoueur intégrée -->
+  <div id="lobbyModal" class="screen hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+    <div class="panel" style="background: #121824; padding: 30px; border-radius: 12px; width: 380px; text-align: center; border: 1px solid #2a3447; color: #fff;">
+      <h2 style="margin-top: 0; color: #00bcd4;">Salon Multijoueur</h2>
+      <p style="color: #8a9bb8; font-size: 14px;">Partage ce code à tes amis :</p>
+      
+      <input type="text" readonly style="width: 100%; padding: 10px; text-align: center; font-size: 18px; font-weight: bold; background: #1a2230; border: 1px solid #3a4454; color: #00bcd4; border-radius: 6px; margin-bottom: 20px;" />
+
+      <h3 style="font-size: 16px; text-align: left; margin-bottom: 8px;">Joueurs dans la salle :</h3>
+      <div id="lobbyPlayersList" style="background: #1a2230; border-radius: 6px; padding: 10px; min-height: 80px; max-height: 150px; overflow-y: auto; text-align: left; margin-bottom: 20px; font-size: 14px; color: #cbd5e1;">
+      </div>
+
+      <button id="btnStartLobby" class="btn primary hidden" style="width: 100%; margin-bottom: 10px;">Lancer la partie</button>
+      <button onclick="document.getElementById('lobbyModal').classList.add('hidden'); document.getElementById('mainMenu').classList.remove('hidden');" class="btn" style="width: 100%; background: #e53935; color: #fff;">Quitter le salon</button>
+    </div>
+  </div>
+
+  <div id="settingsScreen" class="screen hidden">
+    <div class="panel wide">
+      <h2>Paramètres</h2>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="tab-keys">Touches</button>
+        <button class="tab" data-tab="tab-mouse">Souris</button>
+        <button class="tab" data-tab="tab-gfx">Graphismes</button>
+        <button class="tab" data-tab="tab-audio">Audio</button>
+        <button class="tab" data-tab="tab-game">Jeu</button>
+      </div>
+
+      <div id="tab-keys" class="tabpanel active">
+        <p class="note">Clique sur une touche, puis appuie sur la nouvelle touche. Échap annule.</p>
+        <div id="keyList"></div>
+        <button id="btnResetKeys" class="btn small">Réinitialiser les touches</button>
+      </div>
+
+      <div id="tab-mouse" class="tabpanel">
+        <label class="row"><span>Sensibilité horizontale</span>
+          <input type="range" min="0.2" max="3" step="0.05" data-s="sensX">
+          <output data-v="sensX" data-fmt="x"></output></label>
+        <label class="row"><span>Sensibilité verticale</span>
+          <input type="range" min="0.2" max="3" step="0.05" data-s="sensY">
+          <output data-v="sensY" data-fmt="x"></output></label>
+        <label class="row"><span>Inverser l'axe vertical</span>
+          <input type="checkbox" data-s="invertY"></label>
+      </div>
+
+      <div id="tab-gfx" class="tabpanel">
+        <label class="row"><span>Qualité</span>
+          <select data-s="quality">
+            <option value="low">Basse</option>
+            <option value="medium">Moyenne</option>
+            <option value="high">Haute</option>
+          </select></label>
+        <label class="row"><span>Ombres</span>
+          <input type="checkbox" data-s="shadows"></label>
+        <label class="row"><span>Particules</span>
+          <input type="checkbox" data-s="particles"></label>
+        <label class="row"><span>Champ de vision</span>
+          <input type="range" min="60" max="110" step="1" data-s="fov">
+          <output data-v="fov" data-fmt="deg"></output></label>
+        <label class="row"><span>Afficher les FPS</span>
+          <input type="checkbox" data-s="showFps"></label>
+      </div>
+
+      <div id="tab-audio" class="tabpanel">
+        <label class="row"><span>Volume général</span>
+          <input type="range" min="0" max="1" step="0.01" data-s="master">
+          <output data-v="master" data-fmt="pct"></output></label>
+        <label class="row"><span>Musique</span>
+          <input type="range" min="0" max="1" step="0.01" data-s="music">
+          <output data-v="music" data-fmt="pct"></output></label>
+        <label class="row"><span>Bruitages</span>
+          <input type="range" min="0" max="1" step="0.01" data-s="sfx">
+          <output data-v="sfx" data-fmt="pct"></output></label>
+      </div>
+
+      <div id="tab-game" class="tabpanel">
+        <label class="row"><span>Vue</span>
+          <select data-s="view">
+            <option value="first">1re personne</option>
+            <option value="third">3e personne</option>
+          </select></label>
+        <label class="row"><span>Tremblements d'écran</span>
+          <input type="checkbox" data-s="shake"></label>
+      </div>
+
+      <button id="btnSettingsBack" class="btn primary">Retour</button>
+    </div>
+  </div>
+
+  <div id="pauseMenu" class="screen hidden">
+    <div class="panel">
+      <h2>Pause</h2>
+      <button id="btnResume" class="btn primary">Reprendre</button>
+      <button id="btnPauseSettings" class="btn">Paramètres</button>
+      <button id="btnQuit" class="btn">Quitter vers le menu</button>
+    </div>
+  </div>
+
+  <div id="upgradeScreen" class="screen hidden">
+    <div class="panel wide">
+      <h2>Plateforme terminée !</h2>
+      <p class="subtitle">Choisis une amélioration (touches 1, 2 ou 3).</p>
+      <div class="cards">
+        <button class="card" data-up="hp"><b>1 · Vitalité</b><span id="upHp"></span></button>
+        <button class="card" data-up="speed"><b>2 · Vitesse</b><span id="upSpeed"></span></button>
+        <button class="card" data-up="dmg"><b>3 · Puissance</b><span id="upDmg"></span></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="endScreen" class="screen hidden">
+    <div class="panel">
+      <h2 id="endTitle"></h2>
+      <div id="endStats" class="stats"></div>
+      <button id="btnReplay" class="btn primary">Rejouer</button>
+      <button id="btnToMenu" class="btn">Menu principal</button>
+    </div>
+  </div>
+
+  <div id="scoresScreen" class="screen hidden">
+    <div class="panel">
+      <h2>Meilleurs scores</h2>
+      <div id="scoresBody" class="stats"></div>
+      <button id="btnScoresBack" class="btn primary">Retour</button>
+    </div>
+  </div>
+
+  <div id="loadError" class="hidden"></div>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
