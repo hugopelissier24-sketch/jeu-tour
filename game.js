@@ -433,7 +433,7 @@ const FIREBASE_CONFIG = {
     return cache.mat[k];
   }
 
-  function createMaterial(color, roughness = 0.7, metalness = 0.1) {
+function createMaterial(color, roughness = 0.3, metalness = 0.5) {
     return new THREE.MeshStandardMaterial({ color, roughness, metalness });
   }
 
@@ -467,6 +467,10 @@ const FIREBASE_CONFIG = {
     renderer = new THREE.WebGLRenderer({ canvas: ui.canvas, antialias: true });
     renderer.shadowMap.enabled = Boolean(settings.shadows);
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.3;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.3;
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x090a10);
     scene.fog = new THREE.Fog(0x090a10, 25, 110);
