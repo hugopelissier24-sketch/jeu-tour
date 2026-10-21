@@ -11,6 +11,31 @@ html, body {
 }
  
 .hidden { display: none !important; }
+
+#orientationWarning {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: #0b0b12;
+  z-index: 9999;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+  color: #fff;
+  font-size: 18px;
+}
+#orientationWarning h2 {
+  font-size: 26px;
+  margin-bottom: 12px;
+}
+
+@media screen and (max-width: 900px) and (orientation: portrait) {
+  #orientationWarning {
+    display: flex !important;
+  }
+}
  
 #gameCanvas {
   position: fixed;
