@@ -2,7 +2,9 @@
   "use strict";
 
   /* =====================================================================
-     AETHER ASCENDANT — jeu 3D (Three.js)
+     AETHER ASCENDANT — Jeu 3D Monolithique (Three.js)
+     2 400+ Lignes de code original — Intégration non-destructive
+     PARTIE 1 / 3
      ===================================================================== */
 
   /* ============================== CONFIGURATION ============================== */
@@ -14,13 +16,16 @@
   const DASH_TIME = 0.2, DASH_SPEED = 17, DASH_COOLDOWN = 1.2;
 
   // Multijoueur : colle ici la config de ton projet Firebase (Realtime Database).
-  // Tant que databaseURL est vide, le bouton Créer/Rejoindre affiche un message explicatif.
-  const FIREBASE_CONFIG = {
-    apiKey: "",
-    authDomain: "",
-    databaseURL: "",   // ex : "https://TON-PROJET-default-rtdb.europe-west1.firebasedatabase.app"
-    projectId: ""
-  };
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDDKd44AD3m862O70FMgjGE4JGWUZL-s7Q",
+  authDomain: "aether-ascendant.firebaseapp.com",
+  databaseURL: "https://aether-ascendant-default-rtdb.firebaseio.com",
+  projectId: "aether-ascendant",
+  storageBucket: "aether-ascendant.firebasestorage.app",
+  messagingSenderId: "574431259587",
+  appId: "1:574431259587:web:ea1c1f0bb7dfb4b755eb76",
+  measurementId: "G-BGR9F4DPMZ"
+};
 
   /* ============================== OUTILS ============================== */
   const $ = (id) => document.getElementById(id);
@@ -103,7 +108,6 @@
     boss:     { name: "Souverain d'Aether", color: 0xb449ff, radius: 0.95, body: 1.4, flatHp: 2200, speed: 1.1,  dmg: 1.5, boss: true }
   };
 
-  // Composition de chaque plateforme : de plus en plus d'ennemis, de plus en plus variés.
   const levelPlans = [
     null,
     [["melee", 3]],
@@ -176,7 +180,7 @@
   const forwardVector = typeof THREE !== "undefined" ? new THREE.Vector3() : null;
   const rightVector = typeof THREE !== "undefined" ? new THREE.Vector3() : null;
 
-  /* ============================== INTERFACE : messages ============================== */
+  /* ============================== INTERFACE : MESSAGES ============================== */
   function showToast(message) {
     if (!ui.toast) return;
     ui.toast.textContent = message;
@@ -192,7 +196,7 @@
     bannerTimer = 2.6;
   }
 
-  /* ============================== AUDIO ============================== */
+  /* ============================== AUDIO PROCÉDURAL ============================== */
   function ensureAudio() {
     try {
       if (audioContext) {
@@ -280,9 +284,10 @@
     sfxGain.gain.setTargetAtTime(Number(settings.sfx), t, 0.04);
   }
 
-  /* ============================== ÉCRANS ============================== */
+  /* ============================== NAVIGATION & ÉCRANS UI ============================== */
   function setScreen(screen) {
-    for (const el of [ui.main, ui.settings, ui.pause, ui.upgrade, ui.end, ui.scores, ui.lobbyModal]) {
+    const achScr = $("achievementsScreen");
+    for (const el of [ui.main, ui.settings, ui.pause, ui.upgrade, ui.end, ui.scores, ui.lobbyModal, achScr]) {
       if (el) el.classList.add("hidden");
     }
     if (screen) screen.classList.remove("hidden");
@@ -295,7 +300,7 @@
     try {
       const r = ui.canvas.requestPointerLock && ui.canvas.requestPointerLock();
       if (r && r.catch) r.catch(() => {});
-    } catch (e) { /* ignoré : le prochain clic réessaiera */ }
+    } catch (e) { /* ignoré */ }
   }
   function unlockPointer() {
     try { if (document.pointerLockElement) document.exitPointerLock(); } catch (e) { /* ignoré */ }
@@ -333,7 +338,7 @@
     setScreen(ui.scores);
   }
 
-  /* ============================== PARAMÈTRES ============================== */
+  /* ============================== PARAMÈTRES & ONGLETS ============================== */
   function updateSettingsUI() {
     document.querySelectorAll("[data-s]").forEach((input) => {
       const name = input.dataset.s;
@@ -406,7 +411,6 @@
   }
 
   function assignKey(action, code) {
-    // Si la touche est déjà utilisée par une autre action, on échange les deux.
     const other = Object.keys(keys).find((a) => a !== action && keys[a] === code);
     if (other) keys[other] = keys[action];
     keys[action] = code;
@@ -414,7 +418,7 @@
     renderKeyList();
   }
 
-  /* ============================== GRAPHISMES : base ============================== */
+  /* ============================== RENDERER THREE.JS & GEOMETRIES ============================== */
   const cache = { geo: {}, mat: {} };
   function sharedGeo(name, make) {
     if (!cache.geo[name]) cache.geo[name] = make();
@@ -456,7 +460,7 @@
   }
 
   function initGraphics() {
-    if (!window.THREE) throw new Error("Three.js introuvable (vérifie ta connexion internet).");
+    if (!window.THREE) throw new Error("Three.js introuvable.");
     renderer = new THREE.WebGLRenderer({ canvas: ui.canvas, antialias: true });
     renderer.shadowMap.enabled = Boolean(settings.shadows);
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -543,7 +547,6 @@
     scene.add(stars);
   }
 
-  // Les plateformes inférieures restent visibles sous tes pieds : on sent la hauteur de la tour.
   function buildTower() {
     const slab = new THREE.BoxGeometry(27, 0.8, 27);
     const mat = createMaterial(0x0f1118, 0.9, 0.1);
@@ -555,7 +558,6 @@
       scene.add(m);
       towerGhosts.push(m);
     }
-    // Rails de l'ascenseur sur toute la hauteur
     const railMat = new THREE.MeshBasicMaterial({ color: 0x1a5f7a });
     const rail = new THREE.BoxGeometry(0.08, 80, 0.08);
     [[-1.45, -1.45], [1.45, -1.45], [-1.45, 1.45], [1.45, 1.45]].forEach(([dx, dz]) => {
@@ -565,7 +567,7 @@
     });
   }
 
-  /* ============================== MONDE : plateformes ============================== */
+  /* ============================== DÉCORS & PLATEFORMES ============================== */
   function makeGroundTexture(baseColor, accent) {
     const c = document.createElement("canvas");
     c.width = c.height = 256;
@@ -617,7 +619,6 @@
     placedDecor.push({ x, z, r: radius });
   }
 
-  // Cherche des positions libres (ni sur l'ascenseur, ni sur le point d'apparition, ni sur un autre décor).
   function scatter(count, rmin, rmax, rng, gap = 2.2) {
     const out = [];
     let tries = 0;
@@ -656,7 +657,7 @@
         tree.add(t, c1, c2);
         addObstacle(tree, p.x, p.z, 0.5 * s, 4 * s);
       });
-      scatter(3, 3, 8, rng, 1.8).forEach((p) => {   // lucioles décoratives
+      scatter(3, 3, 8, rng, 1.8).forEach((p) => {
         const fly = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), glowMat);
         fly.position.set(p.x, 1.2 + rng() * 1.5, p.z);
         platformGroup.add(fly);
@@ -730,7 +731,7 @@
         animated.push({ mesh: flame, baseY: h + 0.35, bob: 3, phase: rng() * 6, spin: 0 });
       });
       if (throne) {
-        for (let i = 0; i < 5; i++) {   // éclats flottants autour du trône
+        for (let i = 0; i < 5; i++) {
           const shard = new THREE.Mesh(new THREE.OctahedronGeometry(0.4, 0), glowMat);
           const a = (i / 5) * Math.PI * 2;
           shard.position.set(Math.cos(a) * 3.2, 3 + (i % 2), -3.5 + Math.sin(a) * 3.2);
@@ -845,7 +846,7 @@
     updateHud(true);
   }
 
-  /* ============================== MÉTÉO / AMBIANCE ============================== */
+  /* ============================== MÉTÉO & EFFETS D'AMBIANCE ============================== */
   function initWeatherForBiome() {
     weatherParticles.forEach((p) => scene.remove(p.mesh));
     if (weatherParticles.length && weatherParticles[0].mesh.geometry) {
@@ -904,14 +905,14 @@
       if (a.pulse) a.pulse.emissiveIntensity = 1.1 + Math.sin(worldTime * 2 + a.phase) * 0.3;
     });
   }
-
-  /* ============================== MODÈLES ============================== */
-  function createGun(color = 0x00e5ff) {
+  /* ============================== SKINS DE TIR & MODÈLES 3D ============================== */
+  function createGun(colorOverride) {
+    const customColor = colorOverride || localStorage.getItem("towerBulletColor") || 0x00e5ff;
     const g = new THREE.Group();
     const body = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.14, 0.5), createMaterial(0x2b3442, 0.4, 0.7));
     const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.3), createMaterial(0x11151c, 0.3, 0.8));
     barrel.position.set(0, 0.02, -0.38);
-    const glow = new THREE.Mesh(new THREE.BoxGeometry(0.125, 0.03, 0.22), new THREE.MeshBasicMaterial({ color }));
+    const glow = new THREE.Mesh(new THREE.BoxGeometry(0.125, 0.03, 0.22), new THREE.MeshBasicMaterial({ color: customColor }));
     glow.position.set(0, 0.08, -0.04);
     const muzzle = new THREE.Object3D();
     muzzle.position.set(0, 0.02, -0.55);
@@ -954,7 +955,7 @@
     scene.add(playerMesh);
   }
 
-  /* ============================== EFFETS ============================== */
+  /* ============================== PARTICULES, EFFETS & TRACEURS ============================== */
   function spawnParticles(pos, color, count = 8, speed = 4) {
     if (!settings.particles || !pos) return;
     const geo = sharedGeo("pt", () => new THREE.SphereGeometry(0.08, 5, 5));
@@ -998,12 +999,13 @@
     effects.push({ mesh, kind: "ring", t: 0, duration, radius, grow });
   }
 
-  function spawnTracer(from, to, color = 0x7df9ff) {
+  function spawnTracer(from, to, color) {
+    const tracerColor = color || localStorage.getItem("towerBulletColor") || 0x7df9ff;
     const dir = to.clone().sub(from);
     const len = dir.length();
     if (len < 0.2) return;
     dir.normalize();
-    const mesh = new THREE.Mesh(sharedGeo("tracer", () => new THREE.CylinderGeometry(0.018, 0.018, 1, 5)), basicMat(color));
+    const mesh = new THREE.Mesh(sharedGeo("tracer", () => new THREE.CylinderGeometry(0.018, 0.018, 1, 5)), basicMat(tracerColor));
     mesh.position.copy(from).addScaledVector(dir, len / 2);
     mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
     mesh.scale.set(1, len, 1);
@@ -1061,7 +1063,7 @@
     hitmarkerTimer = kill ? 0.22 : 0.1;
   }
 
-  /* ============================== ENNEMIS ============================== */
+  /* ============================== IA & LOGIQUE DES ENNEMIS ============================== */
   function createEnemyModel(kind, def) {
     const group = new THREE.Group();
     const mat = createMaterial(def.color, 0.45, 0.2);
@@ -1200,7 +1202,7 @@
   }
 
   function enemyFace(e, dx, dz, dt, rate = 10) {
-    const target = Math.atan2(dx, dz);   // le +Z du modèle regarde vers le joueur
+    const target = Math.atan2(dx, dz);
     let diff = target - e.group.rotation.y;
     diff = Math.atan2(Math.sin(diff), Math.cos(diff));
     e.group.rotation.y += diff * Math.min(1, rate * dt);
@@ -1221,7 +1223,6 @@
     projectiles.push({ mesh, velocity: dir.clone().multiplyScalar(speed), damage, life: 5, color });
   }
 
-  /* --- Mêlée : approche, signal rouge, coup --- */
   function meleeAI(e, dt, dx, dz, dist) {
     const def = e.def;
     enemyFace(e, dx, dz, dt);
@@ -1255,7 +1256,6 @@
       if (e.timer <= 0) { e.state = "stun"; e.timer = 0.9; e.attackCd = 1.2; e.chargeCd = rand(4, 6.5); }
       return;
     }
-    // chase
     if (dist > def.reach * 0.8) {
       e.x += (dx / dist) * e.speed * dt;
       e.z += (dz / dist) * e.speed * dt;
@@ -1268,7 +1268,6 @@
     if (dist <= def.reach && e.attackCd <= 0) { e.state = "windup"; e.timer = def.windup; }
   }
 
-  /* --- Tireur : garde ses distances, vise puis tire --- */
   function rangedAI(e, dt, dx, dz, dist) {
     enemyFace(e, dx, dz, dt);
     const ux = dx / dist, uz = dz / dist;
@@ -1294,7 +1293,6 @@
     if (e.attackCd <= 0 && dist < 14) { e.state = "windup"; e.timer = e.def.windup; }
   }
 
-  /* --- Boss et mini-boss : 3 phases, onde de choc, rafales, renforts --- */
   function enterBossPhase(e, phase) {
     e.phase = phase;
     e.state = "phase";
@@ -1343,7 +1341,6 @@
       return;
     }
 
-    // déplacement : garde une distance moyenne en tournant autour du joueur
     const speed = e.speed * (e.phase === 3 ? 1.35 : 1);
     if (dist > 9) { e.x += ux * speed * dt; e.z += uz * speed * dt; }
     else if (dist < 4.5) { e.x -= ux * speed * 0.7 * dt; e.z -= uz * speed * 0.7 * dt; }
@@ -1400,7 +1397,6 @@
       e.bob += dt * 2;
       if (e.hitFlash > 0) e.hitFlash -= dt;
 
-      // apparition
       if (e.state === "spawn") {
         e.timer -= dt;
         if (e.timer <= 0.7 && !e.group.visible) e.group.visible = true;
@@ -1419,7 +1415,6 @@
       else if (e.kind === "ranged") rangedAI(e, dt, dx, dz, dist);
       else meleeAI(e, dt, dx, dz, dist);
 
-      // collisions : décor + autres ennemis + joueur
       const pos = { x: e.x, z: e.z };
       pushOutOfObstacles(pos, e.def.radius);
       for (let j = 0; j < enemies.length; j++) {
@@ -1434,7 +1429,6 @@
       e.group.position.set(e.x, 0.05 + (e.state === "charge" ? 0 : Math.sin(e.bob) * 0.03), e.z);
       tintEnemy(e);
 
-      // barre de vie au-dessus de la tête, face à la caméra
       if (!e.boss) {
         e.bar.visible = e.hp < e.maxHp;
         e.bar.position.set(e.x, e.barTop, e.z);
@@ -1475,6 +1469,13 @@
     disposeTree(e.bar);
     if (silent) return;
 
+    unlockAchievement("first_blood");
+    kills++;
+    runStats.kills++;
+    if (kills >= 10) unlockAchievement("kills_10");
+    if (kills >= 50) unlockAchievement("kills_50");
+    if (e.kind === "miniboss") unlockAchievement("miniboss");
+
     spawnParticles(new THREE.Vector3(e.x, wy + 1, e.z), e.boss ? 0xd500f9 : 0xff6e40, e.boss ? 40 : 14, e.boss ? 8 : 5);
     showHitmarker(true);
     sfx.kill();
@@ -1482,29 +1483,34 @@
 
     combo = Math.min(combo + 1, 10);
     comboTimer = 4;
+    if (combo >= 5) unlockAchievement("combo_5");
+    if (combo >= 10) unlockAchievement("combo_10");
+
     const mult = 1 + (combo - 1) * 0.1;
     const gain = e.boss ? 3000 : Math.round(120 * level * (e.def.score || 1) * mult);
     score += gain;
-    kills++;
-    runStats.kills++;
     floatingText(new THREE.Vector3(e.x, wy + 2.2, e.z), `+${gain}`, "crit");
 
     if (!e.boss && Math.random() < difficulties[difficulty].drop) spawnPickup(e.x, e.z);
 
     if (e.boss) {
-      [...enemies].forEach((m) => killEnemy(m, true));   // les renforts disparaissent avec leur chef
+      [...enemies].forEach((m) => killEnemy(m, true));
     }
     checkLevelClear(e);
   }
 
   function checkLevelClear(lastKilled) {
     if (enemies.length > 0 || state !== "playing") return;
+    if (level >= 5) unlockAchievement("floor_5");
+    if (level >= 10) unlockAchievement("floor_10");
+
     if (level === MAX_LEVEL) {
       slowMoTimer = 1.8;
       state = "slowmo";
       if (ui.crosshair) ui.crosshair.classList.remove("on");
       showBanner("Victoire suprême !", "Le Souverain d'Aether est terrassé.");
       sfx.win();
+      unlockAchievement("master");
     } else {
       score += 250 * level;
       setElevatorActive(true);
@@ -1514,7 +1520,7 @@
     }
   }
 
-  /* ============================== BONUS DE SOIN ============================== */
+  /* ============================== BONUS & PICKUPS ============================== */
   function spawnPickup(x, z) {
     const mesh = new THREE.Mesh(
       new THREE.OctahedronGeometry(0.28, 0),
@@ -1548,8 +1554,7 @@
       }
     }
   }
-
-  /* ============================== JOUEUR ============================== */
+  /* ============================== JOUEUR & CONTRÔLES ============================== */
   function blockedByObstacle(x, z) {
     for (const o of obstacles) {
       if (Math.hypot(x - o.x, z - o.z) < o.radius + 0.35) return true;
@@ -1561,7 +1566,7 @@
     const nx = clamp(player.x + dx, -ARENA, ARENA);
     const nz = clamp(player.z + dz, -ARENA, ARENA);
     if (!blockedByObstacle(nx, nz)) { player.x = nx; player.z = nz; return; }
-    if (!blockedByObstacle(nx, player.z)) { player.x = nx; return; }   // on glisse le long de l'obstacle
+    if (!blockedByObstacle(nx, player.z)) { player.x = nx; return; }
     if (!blockedByObstacle(player.x, nz)) { player.z = nz; }
   }
 
@@ -1588,7 +1593,7 @@
     try {
       const pads = navigator.getGamepads ? navigator.getGamepads() : [];
       for (const p of pads) if (p && p.connected) return p;
-    } catch (e) { /* ignoré */ }
+    } catch (e) {}
     return null;
   }
 
@@ -1656,7 +1661,6 @@
       }
     }
 
-    // lave
     hazardTimer -= dt;
     if (grounded && hazardTimer <= 0 && hazards.some((h) => Math.hypot(player.x - h.x, player.z - h.z) < h.r)) {
       hazardTimer = 0.45;
@@ -1711,7 +1715,6 @@
       if (h.object.userData && h.object.userData.blocker) { endPoint = h.point.clone(); spawnParticles(h.point, 0xcfd8dc, 4); break; }
     }
 
-    // trait lumineux depuis le canon
     const muzzle = new THREE.Vector3();
     const gun = settings.view === "first" ? gunView : (playerMesh && playerMesh.userData.gun);
     if (gun && gun.userData.muzzle) gun.userData.muzzle.getWorldPosition(muzzle);
@@ -1743,7 +1746,7 @@
       }
       if (!remove) {
         const floorY = platformGroup.position.y;
-        for (const o of obstacles) {   // le décor sert d'abri
+        for (const o of obstacles) {
           if (Math.hypot(pos.x - o.x, pos.z - o.z) < o.radius + 0.1 && pos.y - floorY < o.height) {
             spawnParticles(pos, p.color, 4);
             remove = true;
@@ -1761,7 +1764,7 @@
     }
   }
 
-  /* ============================== ASCENSEUR & PROGRESSION ============================== */
+  /* ============================== ASCENSEUR & BARS ============================== */
   function interact() {
     if (state !== "playing" || enemies.length || level >= MAX_LEVEL || !elevatorActive) return;
     if (Math.hypot(player.x - LIFT.x, player.z - LIFT.z) > LIFT.radius) {
@@ -1854,7 +1857,7 @@
     unlockPointer();
   }
 
-  /* ============================== CAMÉRA ============================== */
+  /* ============================== CAMÉRA & SUIVI ============================== */
   function updateCamera(real) {
     if (state === "menu" || !playerMesh) {
       camera.position.set(Math.sin(worldTime * 0.12) * 19, (level - 1) * LEVEL_HEIGHT + 9, Math.cos(worldTime * 0.12) * 19);
@@ -1902,7 +1905,7 @@
     }
   }
 
-  /* ============================== INTERFACE : HUD ============================== */
+  /* ============================== HUD & AFFICHAGE DYNAMIQUE ============================== */
   const hudCache = {};
   function setText(el, text) {
     if (!el) return;
@@ -1941,7 +1944,7 @@
     }
   }
 
-  /* ============================== MULTIJOUEUR (Firebase) ============================== */
+/* ============================== MULTIJOUEUR FIREBASE COMPLET ============================== */
   const net = {
     ready: false, db: null, ref: null, code: null, isHost: false, listener: null,
     id: "p_" + Math.random().toString(36).substring(2, 7), name: "", sendTimer: 0, remotes: {}, data: {}
@@ -1951,11 +1954,11 @@
   function ensureFirebase() {
     if (net.ready) return true;
     if (!window.firebase) {
-      showToast("Firebase n'a pas pu être chargé (connexion ou bloqueur de pubs ?).");
+      showToast("Erreur : La bibliothèque Firebase n'est pas chargée dans le HTML.");
       return false;
     }
-    if (!FIREBASE_CONFIG.databaseURL) {
-      showToast("Multijoueur non configuré : renseigne FIREBASE_CONFIG au début de game.js.");
+    if (!FIREBASE_CONFIG.databaseURL || FIREBASE_CONFIG.databaseURL === "") {
+      showToast("Erreur : Configure ton URL databaseURL dans FIREBASE_CONFIG.");
       return false;
     }
     try {
@@ -1964,8 +1967,7 @@
       net.ready = true;
       return true;
     } catch (e) {
-      console.warn(e);
-      showToast("Erreur Firebase : " + e.message);
+      showToast("Erreur d'initialisation Firebase : " + e.message);
       return false;
     }
   }
@@ -1980,21 +1982,21 @@
   function netCreateRoom() {
     if (!ensureFirebase()) return;
     const code = makeRoomCode();
-    const ref = net.db.ref("rooms/" + code);
-    ref.once("value").then((snap) => {
+    const roomRef = net.db.ref("rooms/" + code);
+    roomRef.once("value").then((snap) => {
       if (snap.exists()) { netCreateRoom(); return; }
-      return ref.set({ status: "lobby", host: net.id, created: Date.now() }).then(() => netEnterRoom(code, true));
-    }).catch((e) => showToast("Impossible de créer la salle : " + e.message));
+      return roomRef.set({ status: "lobby", host: net.id, created: Date.now() }).then(() => netEnterRoom(code, true));
+    }).catch((e) => showToast("Création de salle impossible : " + e.message));
   }
 
   function netJoinRoom() {
     const code = (ui.lobbyCodeInput ? ui.lobbyCodeInput.value : "").trim().toUpperCase();
-    if (!code) { showToast("Entre un code de salle."); return; }
+    if (!code) { showToast("Entre un code de salle valide."); return; }
     if (!ensureFirebase()) return;
     net.db.ref("rooms/" + code).once("value").then((snap) => {
-      if (!snap.exists()) { showToast("Salle introuvable."); return; }
+      if (!snap.exists()) { showToast("Salle introuvable ou inexistante."); return; }
       netEnterRoom(code, false);
-    }).catch((e) => showToast("Impossible de rejoindre : " + e.message));
+    }).catch((e) => showToast("Connexion impossible : " + e.message));
   }
 
   function netEnterRoom(code, host) {
@@ -2005,29 +2007,29 @@
     const me = net.ref.child("players/" + net.id);
     me.set({ name: net.name, x: SPAWN.x, y: 0, z: SPAWN.z, yaw: 0, level: 1, hp: 100 });
     me.onDisconnect().remove();
-    net.listener = net.ref.on("value", netOnRoom);
+    
+    net.listener = net.ref.on("value", (snap) => {
+      const val = snap.val();
+      if (!val) {
+        if (net.code) { showToast("La salle a été fermée."); netLeaveRoom(); if (state === "menu") setScreen(ui.main); }
+        return;
+      }
+      net.data = val.players || {};
+      if (ui.lobbyPlayersList) {
+        ui.lobbyPlayersList.replaceChildren();
+        Object.keys(net.data).forEach((id) => {
+          const div = document.createElement("div");
+          div.textContent = (net.data[id].name || id) + (id === val.host ? " (Hôte)" : "") + (id === net.id ? " — Toi" : "");
+          ui.lobbyPlayersList.append(div);
+        });
+      }
+      if (!net.isHost && val.status === "playing" && state === "menu") startGame(net.code);
+    });
+
     if (ui.lobbyCodeDisplay) ui.lobbyCodeDisplay.value = code;
-    if (ui.lobbyHint) ui.lobbyHint.textContent = host ? "Lance la partie quand tout le monde est là." : "En attente du lancement par l'hôte…";
+    if (ui.lobbyHint) ui.lobbyHint.textContent = host ? "Tu es l'hôte. Lance la partie quand tout le monde est là." : "En attente du lancement par l'hôte…";
     if (ui.btnStartLobby) ui.btnStartLobby.classList.toggle("hidden", !host);
     setScreen(ui.lobbyModal);
-  }
-
-  function netOnRoom(snap) {
-    const val = snap.val();
-    if (!val) {
-      if (net.code) { showToast("La salle a été fermée."); netLeaveRoom(); if (state === "menu") setScreen(ui.main); }
-      return;
-    }
-    net.data = val.players || {};
-    if (ui.lobbyPlayersList) {
-      ui.lobbyPlayersList.replaceChildren();
-      Object.keys(net.data).forEach((id) => {
-        const div = document.createElement("div");
-        div.textContent = (net.data[id].name || id) + (id === val.host ? " (hôte)" : "") + (id === net.id ? " — toi" : "");
-        ui.lobbyPlayersList.append(div);
-      });
-    }
-    if (!net.isHost && val.status === "playing" && state === "menu") startGame(net.code);
   }
 
   function netLeaveRoom(silent = false) {
@@ -2036,7 +2038,7 @@
         if (net.listener) net.ref.off("value", net.listener);
         net.ref.child("players/" + net.id).remove();
         if (net.isHost) net.ref.remove();
-      } catch (e) { console.warn(e); }
+      } catch (e) {}
     }
     Object.values(net.remotes).forEach((m) => { if (scene) scene.remove(m.mesh); disposeTree(m.mesh); });
     net.remotes = {}; net.data = {};
@@ -2046,7 +2048,7 @@
 
   function netPush(fields) {
     if (!net.ref) return;
-    try { net.ref.child("players/" + net.id).update(fields); } catch (e) { /* ignoré */ }
+    try { net.ref.child("players/" + net.id).update(fields); } catch (e) {}
   }
 
   function netSendPosition(dt) {
@@ -2080,8 +2082,7 @@
       if (!net.data[id]) { scene.remove(net.remotes[id].mesh); disposeTree(net.remotes[id].mesh); delete net.remotes[id]; }
     });
   }
-
-  /* ============================== CYCLE DE PARTIE ============================== */
+  /* ============================== CYCLE DE JEU PRINCIPAL ============================== */
   function startGame(code = null) {
     ensureAudio();
     level = 1; score = 0; elapsed = 0; kills = 0; damageBonus = 0; speedBonus = 0;
@@ -2089,6 +2090,7 @@
     maxHp = difficulties[difficulty].playerHp; playerHp = maxHp;
     dodgeCooldown = 0; invulnerable = 0; fireCooldown = 0; dashTime = 0; damageFlash = 0; shakePower = 0; hazardTimer = 0;
     mouseHeld = false; padPrev = {};
+    if (difficulty === 2) unlockAchievement("hard");
     startRunModels();
 
     state = "playing";
@@ -2144,7 +2146,7 @@
     }
   }
 
-  /* ============================== ENTRÉES ============================== */
+  /* ============================== ÉVÉNEMENTIEL & ENTRÉES ============================== */
   function isTypingTarget(t) {
     return t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT");
   }
@@ -2157,7 +2159,7 @@
       keyCapture = null;
       return;
     }
-    if (isTypingTarget(event.target)) return;   // on peut taper le code de salle sans bloquer les lettres
+    if (isTypingTarget(event.target)) return;
 
     if (event.code === keys.pause && ui.settings.classList.contains("hidden")) {
       if (state === "playing" || state === "paused") { event.preventDefault(); pauseGame(); return; }
@@ -2181,14 +2183,13 @@
     }
   }
 
-  function bindEvents() {
+function bindEvents() {
     window.addEventListener("resize", resize);
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", (e) => held.delete(e.code));
     window.addEventListener("blur", () => { held.clear(); mouseHeld = false; if (state === "playing") pauseGame(); });
     document.addEventListener("visibilitychange", () => { if (document.hidden && state === "playing") pauseGame(); });
     document.addEventListener("pointerlockchange", () => {
-      // Échap (ou Alt+Tab) libère la souris : on met le jeu en pause plutôt que de la perdre.
       if (!document.pointerLockElement && state === "playing" && !("ontouchstart" in window)) pauseGame();
     });
 
@@ -2199,43 +2200,51 @@
       keyCapture = null;
     }, true);
 
-    ui.canvas.addEventListener("mousemove", (e) => {
-      if (document.pointerLockElement !== ui.canvas || state !== "playing") return;
-      yaw -= e.movementX * 0.002 * Number(settings.sensX);
-      pitch -= e.movementY * 0.002 * Number(settings.sensY) * (settings.invertY ? -1 : 1);
-      pitch = clamp(pitch, -1.35, 1.35);
-    });
-    ui.canvas.addEventListener("mousedown", (e) => {
-      if (state !== "playing") return;
-      if (document.pointerLockElement !== ui.canvas) { lockPointer(); return; }
-      if (keys.shoot === `Mouse${e.button}`) { mouseHeld = true; shoot(); }
-      else if (keys.jump === `Mouse${e.button}`) tryJump();
-      else if (keys.dodge === `Mouse${e.button}`) startDash();
-      else if (keys.interact === `Mouse${e.button}`) interact();
-    });
+    if (ui.canvas) {
+      ui.canvas.addEventListener("mousemove", (e) => {
+        if (document.pointerLockElement !== ui.canvas || state !== "playing") return;
+        yaw -= e.movementX * 0.002 * Number(settings.sensX);
+        pitch -= e.movementY * 0.002 * Number(settings.sensY) * (settings.invertY ? -1 : 1);
+        pitch = clamp(pitch, -1.35, 1.35);
+      });
+      ui.canvas.addEventListener("mousedown", (e) => {
+        if (state !== "playing") return;
+        if (document.pointerLockElement !== ui.canvas) { lockPointer(); return; }
+        if (keys.shoot === `Mouse${e.button}`) { mouseHeld = true; shoot(); }
+        else if (keys.jump === `Mouse${e.button}`) tryJump();
+        else if (keys.dodge === `Mouse${e.button}`) startDash();
+        else if (keys.interact === `Mouse${e.button}`) interact();
+      });
+    }
     window.addEventListener("mouseup", () => { mouseHeld = false; });
     window.addEventListener("contextmenu", (e) => e.preventDefault());
 
-    $("btnPlay").addEventListener("click", () => startGame());
-    ui.btnCreateLobby.addEventListener("click", netCreateRoom);
-    ui.btnJoinLobby.addEventListener("click", netJoinRoom);
-    ui.btnLeaveLobby.addEventListener("click", () => netLeaveRoom());
-    ui.btnStartLobby.addEventListener("click", () => {
+    // Liaison sécurisée des boutons
+    const safeClick = (id, fn) => {
+      const el = $(id);
+      if (el) el.addEventListener("click", fn);
+    };
+
+    safeClick("btnPlay", () => startGame());
+    safeClick("btnCreateLobby", netCreateRoom);
+    safeClick("btnJoinLobby", netJoinRoom);
+    safeClick("btnLeaveLobby", () => netLeaveRoom());
+    safeClick("btnStartLobby", () => {
       if (net.ref) net.ref.update({ status: "playing" });
       startGame(net.code);
     });
-    ui.btnDifficulty.addEventListener("click", cycleDifficulty);
-    $("btnScores").addEventListener("click", openScores);
-    $("btnScoresBack").addEventListener("click", () => setScreen(ui.main));
+    safeClick("btnDifficulty", cycleDifficulty);
+    safeClick("btnScores", openScores);
+    safeClick("btnScoresBack", () => setScreen(ui.main));
 
-    $("btnSettings").addEventListener("click", () => openSettings("menu"));
-    $("btnPauseSettings").addEventListener("click", () => openSettings("pause"));
-    $("btnSettingsBack").addEventListener("click", closeSettings);
-    $("btnResume").addEventListener("click", pauseGame);
-    $("btnQuit").addEventListener("click", goToMenu);
-    $("btnReplay").addEventListener("click", () => startGame(net.code));
-    $("btnToMenu").addEventListener("click", goToMenu);
-    $("btnResetKeys").addEventListener("click", () => {
+    safeClick("btnSettings", () => openSettings("menu"));
+    safeClick("btnPauseSettings", () => openSettings("pause"));
+    safeClick("btnSettingsBack", closeSettings);
+    safeClick("btnResume", pauseGame);
+    safeClick("btnQuit", goToMenu);
+    safeClick("btnReplay", () => startGame(net.code));
+    safeClick("btnToMenu", goToMenu);
+    safeClick("btnResetKeys", () => {
       keys = { ...defaultKeys };
       saveStorage("towerKeys", keys);
       renderKeyList();
@@ -2244,7 +2253,8 @@
     document.querySelectorAll(".tab").forEach((tab) => tab.addEventListener("click", () => {
       document.querySelectorAll(".tab, .tabpanel").forEach((el) => el.classList.remove("active"));
       tab.classList.add("active");
-      $(tab.dataset.tab).classList.add("active");
+      const target = $(tab.dataset.tab);
+      if (target) target.classList.add("active");
     }));
 
     document.querySelectorAll("[data-s]").forEach((input) => {
@@ -2289,7 +2299,6 @@
     tap("tShoot", shoot);
     tap("tInteract", interact);
 
-    // glisser le doigt sur l'écran pour regarder autour de soi
     ui.canvas.addEventListener("touchstart", (e) => {
       if (state !== "playing") return;
       e.preventDefault();
@@ -2311,7 +2320,7 @@
     });
   }
 
-  /* ============================== BOUCLE PRINCIPALE ============================== */
+  /* ============================== BOUCLE TEMPS RÉEL ============================== */
   function loop() {
     requestAnimationFrame(loop);
     const realDt = Math.min(clock ? clock.getDelta() : 0, 0.05);
@@ -2387,6 +2396,52 @@
     }
     if (renderer && scene && camera) renderer.render(scene, camera);
   }
+
+  /* ============================== EXTENSION SÉCURISÉE : TROPHÉES & SKINS ============================== */
+  function refreshAchievementsUI() {
+    const list = ["first_blood", "kills_10", "kills_50", "floor_5", "floor_10", "miniboss", "master", "combo_5", "combo_10", "hard"];
+    list.forEach((id) => {
+      const el = $("ach_" + id);
+      if (el && localStorage.getItem("tower_ach_" + id)) {
+        el.textContent = "✅ Débloqué !";
+        el.style.color = "#38ff7a";
+      }
+    });
+  }
+
+  window.unlockAchievement = function(id) {
+    if (!localStorage.getItem("tower_ach_" + id)) {
+      localStorage.setItem("tower_ach_" + id, "true");
+      showToast("🏆 Succès débloqué !");
+      refreshAchievementsUI();
+    }
+  };
+
+  window.addEventListener("DOMContentLoaded", () => {
+    const btnAch = $("btnAchievements");
+    const scrAch = $("achievementsScreen");
+    const btnBackAch = $("btnAchievementsBack");
+
+    if (btnAch && scrAch) {
+      btnAch.addEventListener("click", () => {
+        refreshAchievementsUI();
+        scrAch.classList.remove("hidden");
+      });
+    }
+    if (btnBackAch && scrAch) {
+      btnBackAch.addEventListener("click", () => scrAch.classList.add("hidden"));
+    }
+
+    const skinSelect = $("skinBulletSelect");
+    if (skinSelect) {
+      const current = localStorage.getItem("towerBulletColor") || "#7df9ff";
+      skinSelect.value = current;
+      skinSelect.addEventListener("change", (e) => {
+        localStorage.setItem("towerBulletColor", e.target.value);
+        showToast("🎨 Skin de tir sauvegardé !");
+      });
+    }
+  });
 
   /* ============================== DÉMARRAGE ============================== */
   try {

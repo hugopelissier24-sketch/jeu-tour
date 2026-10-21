@@ -70,32 +70,57 @@
       <h1>Aether Ascendant</h1>
       <p class="subtitle">10 plateformes d'ascension.<br>Survis aux vagues, affronte le mini-boss et le boss final.</p>
 
-      <div class="roomBox">
-        <input type="text" id="lobbyCodeInput" maxlength="8" placeholder="Code de salle (ex : AB12)" autocomplete="off" spellcheck="false">
-        <button id="btnCreateLobby" class="btn small create">Créer</button>
-        <button id="btnJoinLobby" class="btn small join">Rejoindre</button>
-      </div>
-
       <button id="btnPlay" class="btn primary">Jouer en solo</button>
       <button id="btnDifficulty" class="btn">Difficulté : Normale</button>
+      <button id="btnAchievements" class="btn">🏆 Trophées</button>
       <button id="btnScores" class="btn">Meilleurs scores</button>
       <button id="btnSettings" class="btn">Paramètres</button>
+
+      <!-- Section Multijoueur intégrée -->
+      <div class="roomBox" style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 15px; display: flex; flex-direction: column; gap: 8px;">
+        <button id="btnCreateLobby" class="btn" style="background: #1a5f7a; width: 100%;">Créer un salon</button>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="lobbyCodeInput" maxlength="4" placeholder="Code (ex: AB12)" autocomplete="off" spellcheck="false" style="padding: 10px; flex: 1; text-transform: uppercase; background: #11151c; color: #fff; border: 1px solid #333; border-radius: 4px; text-align: center;">
+          <button id="btnJoinLobby" class="btn" style="background: #2b3442; min-width: 100px;">Rejoindre</button>
+        </div>
+      </div>
+
       <div id="controlsHelp" class="help"></div>
     </div>
   </div>
 
-  <div id="lobbyModal" class="screen hidden">
-    <div class="panel">
+  <!-- Écran des 10 Trophées -->
+  <div id="achievementsScreen" class="screen hidden">
+    <div class="panel wide">
+      <h2>Succès & Trophées</h2>
+      <div id="achievementsList" class="stats" style="max-height: 320px; overflow-y: auto;">
+        <div><span>🥇 Premier Sang</span><strong id="ach_first_blood">🔒 Vaincre 1 ennemi</strong></div>
+        <div><span>🏹 Chasseur</span><strong id="ach_kills_10">🔒 Vaincre 10 ennemis</strong></div>
+        <div><span>⚔️ Guerrier Vétéran</span><strong id="ach_kills_50">🔒 Vaincre 50 ennemis</strong></div>
+        <div><span>🧗 Ascension</span><strong id="ach_floor_5">🔒 Atteindre l'étage 5</strong></div>
+        <div><span>🏰 Sommet de la Tour</span><strong id="ach_floor_10">🔒 Atteindre l'étage 10</strong></div>
+        <div><span>🗿 Briseur de Pierre</span><strong id="ach_miniboss">🔒 Vaincre le Gardien (Étage 5)</strong></div>
+        <div><span>👑 Maître d'Aether</span><strong id="ach_master">🔒 Battre le Boss Final</strong></div>
+        <div><span>⚡ Reflexes d'Éclair</span><strong id="ach_combo_5">🔒 Atteindre un Combo x5</strong></div>
+        <div><span>🔥 Maître du Combo</span><strong id="ach_combo_10">🔒 Atteindre le Combo Max (x10)</strong></div>
+        <div><span>💀 Mode Hardcore</span><strong id="ach_hard">🔒 Jouer en mode Difficile</strong></div>
+      </div>
+      <button id="btnAchievementsBack" class="btn primary" style="margin-top:15px;">Retour</button>
+    </div>
+  </div>
+
+  <!-- Salon Multijoueur Modal -->
+  <div id="lobbyModal" class="screen hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(9,10,16,0.95); display: flex; justify-content: center; align-items: center; z-index: 1000;">
+    <div class="panel" style="background: #151821; padding: 25px; border-radius: 8px; text-align: center; width: 340px; border: 1px solid #2b3442;">
       <h2>Salon multijoueur</h2>
-      <p class="note">Partage ce code à tes amis :</p>
-      <input type="text" id="lobbyCodeDisplay" class="codeDisplay" readonly>
+      <p id="lobbyHint" class="note" style="margin: 10px 0; color: #aaa;">Partage ce code à tes amis :</p>
+      <input type="text" id="lobbyCodeDisplay" class="codeDisplay" readonly style="font-size: 22px; font-weight: bold; text-align: center; width: 140px; background: #090a10; color: #00d2ff; border: 1px solid #333; padding: 8px; border-radius: 4px; margin-bottom: 15px;">
 
-      <h3 class="lobbyTitle">Joueurs dans la salle</h3>
-      <div id="lobbyPlayersList" class="lobbyList"></div>
-      <p class="note" id="lobbyHint"></p>
+      <h3 class="lobbyTitle" style="font-size: 16px; margin-top: 10px;">Joueurs dans la salle :</h3>
+      <div id="lobbyPlayersList" class="lobbyList" style="margin: 10px 0 20px 0; min-height: 60px; background: #0f1118; padding: 10px; border-radius: 4px; text-align: left;"></div>
 
-      <button id="btnStartLobby" class="btn primary hidden">Lancer la partie</button>
-      <button id="btnLeaveLobby" class="btn danger">Quitter le salon</button>
+      <button id="btnStartLobby" class="btn primary hidden" style="width: 100%; margin-bottom: 10px;">Lancer la partie</button>
+      <button id="btnLeaveLobby" class="btn danger" style="width: 100%; background: #c62828;">Quitter le salon</button>
     </div>
   </div>
 
@@ -109,6 +134,7 @@
         <button class="tab" data-tab="tab-gfx">Graphismes</button>
         <button class="tab" data-tab="tab-audio">Audio</button>
         <button class="tab" data-tab="tab-game">Jeu</button>
+        <button class="tab" data-tab="tab-skin">🎨 Skins</button>
       </div>
 
       <div id="tab-keys" class="tabpanel active">
@@ -168,6 +194,19 @@
           <input type="checkbox" data-s="shake"></label>
         <label class="row"><span>Dégâts flottants</span>
           <input type="checkbox" data-s="damageNumbers"></label>
+      </div>
+
+      <!-- Onglet Skins -->
+      <div id="tab-skin" class="tabpanel">
+        <label class="row"><span>Couleur des lasers/tirs</span>
+          <select id="skinBulletSelect">
+            <option value="#7df9ff">Cyan Éthéré (Défaut)</option>
+            <option value="#ff3366">Rouge Néon</option>
+            <option value="#38ff7a">Vert Plasma</option>
+            <option value="#ff00ff">Violet Arcanique</option>
+            <option value="#ffaa00">Or Solaire</option>
+          </select>
+        </label>
       </div>
 
       <button id="btnSettingsBack" class="btn primary">Retour</button>
