@@ -24,6 +24,7 @@
     <div id="topRight">
       <div id="timeText"></div>
       <div id="scoreText"></div>
+      <div id="comboText"></div>
       <div id="fpsText" class="hidden"></div>
     </div>
 
@@ -33,15 +34,18 @@
     </div>
 
     <div id="crosshair"></div>
+    <div id="hitmarker"></div>
+    <div id="damageLayer"></div>
     <div id="prompt" class="hidden"></div>
 
     <div id="banner">
       <div id="bannerTitle"></div>
       <div id="bannerSub"></div>
     </div>
-    <div id="toast"></div>
     <div id="flash"></div>
   </div>
+
+  <div id="toast"></div>
 
   <div id="touchControls" class="hidden">
     <div id="joystickZone">
@@ -59,14 +63,14 @@
     <div class="panel">
       <h1>Aether Ascendant</h1>
       <p class="subtitle">10 plateformes d'ascension.<br>Survis aux vagues, affronte le mini-boss et le boss final.</p>
-      
-      <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-        <input type="text" id="lobbyCodeInput" placeholder="Code de salle (ex: salon123)" style="flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #3a4454; background: #161b26; color: #fff; font-size: 14px;">
-        <button id="btnCreateLobby" style="padding: 10px 14px; background: #00bcd4; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Créer</button>
-        <button id="btnJoinLobby" style="padding: 10px 14px; background: #4caf50; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Rejoindre</button>
+
+      <div class="roomBox">
+        <input type="text" id="lobbyCodeInput" maxlength="8" placeholder="Code de salle (ex : AB12)" autocomplete="off" spellcheck="false">
+        <button id="btnCreateLobby" class="btn small create">Créer</button>
+        <button id="btnJoinLobby" class="btn small join">Rejoindre</button>
       </div>
 
-      <button id="btnPlay" class="btn primary">Jouer en Solo</button>
+      <button id="btnPlay" class="btn primary">Jouer en solo</button>
       <button id="btnDifficulty" class="btn">Difficulté : Normale</button>
       <button id="btnScores" class="btn">Meilleurs scores</button>
       <button id="btnSettings" class="btn">Paramètres</button>
@@ -74,20 +78,18 @@
     </div>
   </div>
 
-  <!-- Modale du salon multijoueur intégrée -->
-  <div id="lobbyModal" class="screen hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000;">
-    <div class="panel" style="background: #121824; padding: 30px; border-radius: 12px; width: 380px; text-align: center; border: 1px solid #2a3447; color: #fff;">
-      <h2 style="margin-top: 0; color: #00bcd4;">Salon Multijoueur</h2>
-      <p style="color: #8a9bb8; font-size: 14px;">Partage ce code à tes amis :</p>
-      
-      <input type="text" readonly style="width: 100%; padding: 10px; text-align: center; font-size: 18px; font-weight: bold; background: #1a2230; border: 1px solid #3a4454; color: #00bcd4; border-radius: 6px; margin-bottom: 20px;" />
+  <div id="lobbyModal" class="screen hidden">
+    <div class="panel">
+      <h2>Salon multijoueur</h2>
+      <p class="note">Partage ce code à tes amis :</p>
+      <input type="text" id="lobbyCodeDisplay" class="codeDisplay" readonly>
 
-      <h3 style="font-size: 16px; text-align: left; margin-bottom: 8px;">Joueurs dans la salle :</h3>
-      <div id="lobbyPlayersList" style="background: #1a2230; border-radius: 6px; padding: 10px; min-height: 80px; max-height: 150px; overflow-y: auto; text-align: left; margin-bottom: 20px; font-size: 14px; color: #cbd5e1;">
-      </div>
+      <h3 class="lobbyTitle">Joueurs dans la salle</h3>
+      <div id="lobbyPlayersList" class="lobbyList"></div>
+      <p class="note" id="lobbyHint"></p>
 
-      <button id="btnStartLobby" class="btn primary hidden" style="width: 100%; margin-bottom: 10px;">Lancer la partie</button>
-      <button onclick="document.getElementById('lobbyModal').classList.add('hidden'); document.getElementById('mainMenu').classList.remove('hidden');" class="btn" style="width: 100%; background: #e53935; color: #fff;">Quitter le salon</button>
+      <button id="btnStartLobby" class="btn primary hidden">Lancer la partie</button>
+      <button id="btnLeaveLobby" class="btn danger">Quitter le salon</button>
     </div>
   </div>
 
@@ -104,7 +106,7 @@
       </div>
 
       <div id="tab-keys" class="tabpanel active">
-        <p class="note">Clique sur une touche, puis appuie sur la nouvelle touche. Échap annule.</p>
+        <p class="note">Clique sur une touche, puis appuie sur la nouvelle touche (ou un bouton de souris). Échap annule.</p>
         <div id="keyList"></div>
         <button id="btnResetKeys" class="btn small">Réinitialiser les touches</button>
       </div>
@@ -158,6 +160,8 @@
           </select></label>
         <label class="row"><span>Tremblements d'écran</span>
           <input type="checkbox" data-s="shake"></label>
+        <label class="row"><span>Dégâts flottants</span>
+          <input type="checkbox" data-s="damageNumbers"></label>
       </div>
 
       <button id="btnSettingsBack" class="btn primary">Retour</button>
