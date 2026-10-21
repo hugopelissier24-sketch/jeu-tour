@@ -70,6 +70,20 @@
       <h1>Aether Ascendant</h1>
       <p class="subtitle">10 plateformes d'ascension.<br>Survis aux vagues, affronte le mini-boss et le boss final.</p>
 
+      <!-- Section Connexion / Compte Firebase Auth -->
+      <div id="authBox" style="margin-bottom: 15px; background: rgba(25, 30, 45, 0.9); padding: 10px; border-radius: 8px; border: 1px solid #333f55; text-align: center;">
+        <span id="userStatus" style="color: #cbd5e1; font-size: 12px; display: block; margin-bottom: 6px;">Mode invité (Non connecté)</span>
+        <div style="display: flex; gap: 6px; margin-bottom: 6px;">
+          <input type="email" id="authEmail" placeholder="Email" style="flex: 1; padding: 6px; border-radius: 4px; border: 1px solid #3a4454; background: #161b26; color: #fff; font-size: 11px;">
+          <input type="password" id="authPassword" placeholder="Mot de passe" style="flex: 1; padding: 6px; border-radius: 4px; border: 1px solid #3a4454; background: #161b26; color: #fff; font-size: 11px;">
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <button id="btnLogin" style="flex: 1; padding: 6px; background: #00bcd4; color: #fff; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px;">Connexion</button>
+          <button id="btnRegister" style="flex: 1; padding: 6px; background: #4caf50; color: #fff; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px;">Inscription</button>
+          <button id="btnLogout" class="hidden" style="flex: 1; padding: 6px; background: #e53935; color: #fff; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px;">Déconnexion</button>
+        </div>
+      </div>
+
       <button id="btnPlay" class="btn primary">Jouer en solo</button>
       <button id="btnDifficulty" class="btn">Difficulté : Normale</button>
       <button id="btnAchievements" class="btn">🏆 Trophées</button>
@@ -247,13 +261,15 @@
     <div class="panel">
       <h2>Meilleurs scores</h2>
       <div id="scoresBody" class="stats"></div>
-      <button id="btnScoresBack" class="btn primary">Retour</button>
+      <button id="scoresBack" class="btn primary">Retour</button>
     </div>
   </div>
 
   <div id="loadError" class="hidden"></div>
 
+  <!-- Scripts Firebase Auth inclus -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="game.js"></script>

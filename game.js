@@ -60,7 +60,10 @@ const FIREBASE_CONFIG = {
     lobbyPlayersList: $("lobbyPlayersList"), lobbyHint: $("lobbyHint"),
     btnStartLobby: $("btnStartLobby"), btnCreateLobby: $("btnCreateLobby"),
     btnJoinLobby: $("btnJoinLobby"), btnLeaveLobby: $("btnLeaveLobby"),
-    btnDifficulty: $("btnDifficulty")
+    btnDifficulty: $("btnDifficulty"),
+    // --- AJOUTS AUTH FIREBASE ---
+    authEmail: $("authEmail"), authPassword: $("authPassword"), userStatus: $("userStatus"),
+    btnLogin: $("btnLogin"), btnRegister: $("btnRegister"), btnLogout: $("btnLogout")
   };
 
   /* ============================== DONNÉES ============================== */
@@ -2183,7 +2186,65 @@ const FIREBASE_CONFIG = {
     }
   }
 
-function bindEvents() {
+  /* ============================== AUTHENTIFICATION & COMPTE ============================== */
+  function initAuth() {
+    if (!window.firebase || !firebase.auth) return;
+    try {
+      if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    } catch (e) {
+      return;
+    }
+    const auth = firebase.auth();
+
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        if (ui.userStatus) ui.userStatus.textContent = `Connecté : ${user.email}`;
+        if (ui.authEmail) ui.authEmail.style.display = "none";
+        if (ui.authPassword) ui.authPassword.style.display = "none";
+        if (ui.btnLogin) ui.btnLogin.classList.add("hidden");
+        if (ui.btnRegister) ui.btnRegister.classList.add("hidden");
+        if (ui.btnLogout) ui.btnLogout.classList.remove("hidden");
+        net.name = user.email.split("@")[0];
+      } else {
+        if (ui.userStatus) ui.userStatus.textContent = "Mode invité (Non connecté)";
+        if (ui.authEmail) ui.authEmail.style.display = "block";
+        if (ui.authPassword) ui.authPassword.style.display = "block";
+        if (ui.btnLogin) ui.btnLogin.classList.remove("hidden");
+        if (ui.btnRegister) ui.btnRegister.classList.remove("hidden");
+        if (ui.btnLogout) ui.btnLogout.classList.add("hidden");
+      }
+    });
+
+    if (ui.btnRegister) {
+      ui.btnRegister.addEventListener("click", () => {
+        const email = ui.authEmail ? ui.authEmail.value.trim() : "";
+        const password = ui.authPassword ? ui.authPassword.value.trim() : "";
+        if (!email || !password) { showToast("Entre un email et un mot de passe valides."); return; }
+        auth.createUserWithEmailAndPassword(email, password)
+          .then(() => showToast("Compte créé avec succès !"))
+          .catch((err) => showToast("Erreur : " + err.message));
+      });
+    }
+
+    if (ui.btnLogin) {
+      ui.btnLogin.addEventListener("click", () => {
+        const email = ui.authEmail ? ui.authEmail.value.trim() : "";
+        const password = ui.authPassword ? ui.authPassword.value.trim() : "";
+        if (!email || !password) { showToast("Entre ton email et ton mot de passe."); return; }
+        auth.signInWithEmailAndPassword(email, password)
+          .then(() => showToast("Bon retour parmi nous !"))
+          .catch((err) => showToast("Erreur de connexion : " + err.message));
+      });
+    }
+
+    if (ui.btnLogout) {
+      ui.btnLogout.addEventListener("click", () => {
+        auth.signOut().then(() => showToast("Déconnecté."));
+      });
+    }
+  }
+
+  function bindEvents() {
     window.addEventListener("resize", resize);
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", (e) => held.delete(e.code));
@@ -2446,6 +2507,7 @@ function bindEvents() {
   /* ============================== DÉMARRAGE ============================== */
   try {
     bindEvents();
+    initAuth();
     renderKeyList();
     updateDifficultyButton();
     initGraphics();
